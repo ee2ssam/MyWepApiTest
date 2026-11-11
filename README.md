@@ -23,6 +23,16 @@ ASP.NET Core (.NET 10) 웹 애플리케이션 프로젝트입니다.
      docker run -d -p 8080:8080 --name helloweb ghcr.io/<사용자명>/mywepapitest:latest
      ```
 
+3. **Vercel 배포 (`deploy-vercel`)**:
+   - 정적 에셋 및 웹 결과물을 Vercel로 자동 배포합니다.
+   - GitHub 저장소 **Settings > Secrets and variables > Actions**에 아래 시크릿을 등록하면 활성화됩니다:
+     - `VERCEL_TOKEN`: Vercel 계정 토큰
+     - `VERCEL_ORG_ID`: Vercel 팀/계정 ID (`vercel link` 시 `.vercel/project.json` 확인)
+     - `VERCEL_PROJECT_ID`: Vercel 프로젝트 ID
+
+> ⚠️ **주의 (Vercel 특성 안내)**:  
+> Vercel은 Node.js 및 프론트엔드/정적 사이트 호스팅에 특화된 서버리스 플랫폼입니다. C# .NET 백엔드 런타임(Kestrel 서버, DB 연결, Identity 인증 등 동적 서버 기능)을 완전히 구동하려면 **Render (render.com)**, **Railway**, **Fly.io** 또는 **Azure App Service**와 같은 Docker/컨테이너 지원 호스팅 플랫폼을 권장합니다.
+
 ---
 
 ## 🛠 로컬 개발 및 실행
