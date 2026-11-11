@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using MyFive.Components;
 using MyFive.Data;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -16,7 +17,11 @@ builder.Services.AddDatabaseDeveloperPageExceptionFilter();
 
 builder.Services.AddDefaultIdentity<IdentityUser>(options => options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>();
+
 builder.Services.AddControllersWithViews();
+
+// Register FiveRepository for Supabase five table access
+builder.Services.AddScoped<IFiveRepository, FiveRepository>();
 
 var app = builder.Build();
 

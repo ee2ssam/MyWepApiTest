@@ -4,30 +4,74 @@
 
 <div class="text-center">
     <h1 class="display-4 fw-bold">MyFive Web App</h1>
-    <p class="lead">Supabase (PostgreSQL) 연동 및 Render 배포 프로젝트</p>
+    <p class="lead">Supabase (PostgreSQL) 연동 및 five 테이블 실시간 조회</p>
 </div>
 
 <div class="container my-5">
-    <div class="card shadow-sm mx-auto" style="max-width: 600px;">
-        <div class="card-header bg-primary text-white">
-            <h5 class="card-title mb-0">⚡ Supabase 데이터베이스 연결 테스트</h5>
+    <div class="row g-4">
+        <!-- 1. Supabase 연결 테스트 카드 -->
+        <div class="col-md-5">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-primary text-white">
+                    <h5 class="card-title mb-0">⚡ Supabase 연결 테스트</h5>
+                </div>
+                <div class="card-body">
+                    <p class="card-text text-muted">
+                        PostgreSQL 드라이버를 통해 Supabase 데이터베이스 연결 가능 여부를 실시간으로 확인합니다.
+                    </p>
+                    <button id="btnCheckDb" class="btn btn-outline-primary w-100 py-2">
+                        연결 상태 확인
+                    </button>
+                    <div id="resultBox" class="mt-3 p-3 rounded d-none" style="text-align: left;">
+                        <h6 id="statusTitle" class="fw-bold mb-1"></h6>
+                        <pre id="statusContent" class="mb-0 bg-light p-2 rounded" style="white-space: pre-wrap; font-size: 0.85rem;"></pre>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="card-body text-center">
-            <p class="card-text text-muted">
-                아래 버튼을 눌러 설정된 Supabase(PostgreSQL) 데이터베이스와의 연결 상태를 실시간으로 확인합니다.
-            </p>
-            <button id="btnCheckDb" class="btn btn-primary px-4 py-2">
-                Supabase 연결 확인
-            </button>
-            <div id="resultBox" class="mt-4 p-3 rounded d-none" style="text-align: left;">
-                <h6 id="statusTitle" class="fw-bold mb-2"></h6>
-                <pre id="statusContent" class="mb-0 bg-light p-2 rounded" style="white-space: pre-wrap; font-size: 0.9rem;"></pre>
+
+        <!-- 2. five 테이블 실시간 조회 및 추가 카드 -->
+        <div class="col-md-7">
+            <div class="card shadow-sm h-100">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0">📋 Supabase [five] 테이블 조회</h5>
+                    <button id="btnRefreshFives" class="btn btn-sm btn-light">새로고침</button>
+                </div>
+                <div class="card-body">
+                    <!-- 신규 데이터 등록 폼 -->
+                    <div class="input-group mb-3">
+                        <input type="text" id="inputNote" class="form-control" placeholder="새로운 Note 입력..." />
+                        <button id="btnAddFive" class="btn btn-success">추가</button>
+                    </div>
+
+                    <!-- five 목록 테이블 -->
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 80px;">Id</th>
+                                    <th>Note</th>
+                                    <th style="width: 90px;" class="text-center">동작</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fiveTableBody">
+                                <tr>
+                                    <td colspan="3" class="text-center text-muted py-3">
+                                        데이터를 불러오는 중입니다...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div id="fiveAlert" class="mt-3 alert d-none"></div>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <script>
+    // 1. Supabase 연결 테스트
     document.getElementById('btnCheckDb').addEventListener('click', async function () {
         const resultBox = document.getElementById('resultBox');
         const statusTitle = document.getElementById('statusTitle');
@@ -58,7 +102,79 @@
             statusContent.innerText = err.message;
         } finally {
             btn.disabled = false;
-            btn.innerText = 'Supabase 연결 확인';
+            btn.innerText = '연결 상태 확인';
         }
     });
+
+    // 2. five 테이블 조회 함수
+    async function loadFives() {
+        const tbody = document.getElementById('fiveTableBody');
+        const alertBox = document.getElementById('fiveAlert');
+        alertBox.classList.add('d-none');
+
+        try {
+            const res = await fetch('/api/FiveService');
+            if (!res.ok) {
+                const errData = await res.json();
+                throw new Error(errData.error || errData.message || '조회 실패');
+            }
+            const list = await res.json();
+
+            if (!list || list.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="text-center text-muted py-3">데이터가 없습니다. Supabase five 테이블에 데이터를 추가해보세요!</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = list.map(item => `
+                <tr>
+                    <td class="fw-bold">${item.id}</td>
+                    <td>${item.note || ''}</td>
+                    <td class="text-center">
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteFive(${item.id})">삭제</button>
+                    </td>
+                </tr>
+            `).join('');
+        } catch (err) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-danger py-3">오류: ${err.message}</td></tr>`;
+            alertBox.classList.remove('d-none');
+            alertBox.className = 'mt-3 alert alert-warning';
+            alertBox.innerHTML = `⚠️ <b>five 테이블이 없거나 연결되지 않았습니다.</b><br/>Supabase SQL Editor에서 <code>CREATE TABLE five (id SERIAL PRIMARY KEY, note TEXT);</code> 쿼리를 실행했는지 확인해주세요.`;
+        }
+    }
+
+    // 데이터 추가
+    document.getElementById('btnAddFive').addEventListener('click', async function () {
+        const input = document.getElementById('inputNote');
+        const note = input.value.trim();
+        if (!note) return;
+
+        try {
+            const res = await fetch('/api/FiveService', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ note: note })
+            });
+            if (!res.ok) throw new Error('등록 실패');
+            input.value = '';
+            loadFives();
+        } catch (err) {
+            alert('등록 중 오류 발생: ' + err.message);
+        }
+    });
+
+    // 데이터 삭제
+    async function deleteFive(id) {
+        if (!confirm(`${id}번 항목을 삭제하시겠습니까?`)) return;
+        try {
+            const res = await fetch(`/api/FiveService/${id}`, { method: 'DELETE' });
+            if (!res.ok) throw new Error('삭제 실패');
+            loadFives();
+        } catch (err) {
+            alert('삭제 중 오류 발생: ' + err.message);
+        }
+    }
+
+    // 새로고침 버튼 및 페이지 로드 시 조회
+    document.getElementById('btnRefreshFives').addEventListener('click', loadFives);
+    document.addEventListener('DOMContentLoaded', loadFives);
 </script>
