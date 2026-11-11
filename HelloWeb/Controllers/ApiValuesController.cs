@@ -25,8 +25,8 @@ namespace HelloWeb.Controllers
         {
             //return new string[] { "안녕하세요", "반갑습니다" };
             return new Value[] {
-                new Value { Id = 1, Text = "안녕하세요" },
-                new Value { Id = 2, Text = "반갑습니다" }
+                new Value { Id = 10, Text = "안녕하세요" },
+                new Value { Id = 20, Text = "반갑습니다" }
             };
         }
 
