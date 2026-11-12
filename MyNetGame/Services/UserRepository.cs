@@ -12,6 +12,7 @@ namespace MyNetGame.Services
         Task<bool> InsertAsync(UserTbl user);
         Task<bool> UpdateAsync(UserTbl user);
         Task<bool> DeleteAsync(string userId);
+        Task<int> LoginAsync(string userId, string password);
     }
 
     public class UserRepository : IUserRepository
@@ -87,6 +88,15 @@ namespace MyNetGame.Services
             const string sql = "DELETE FROM user_tbl WHERE user_id = @userId;";
             var affected = await db.ExecuteAsync(sql, new { userId });
             return affected > 0;
+        }
+
+        // 6. LOGIN 저장 프로시저 (sp_login) 호출
+        public async Task<int> LoginAsync(string userId, string password)
+        {
+            using var db = CreateConnection();
+            // Supabase에 생성된 sp_login 저장 함수 호출
+            const string sql = "SELECT sp_login(@userId, @password);";
+            return await db.ExecuteScalarAsync<int>(sql, new { userId, password });
         }
     }
 }
