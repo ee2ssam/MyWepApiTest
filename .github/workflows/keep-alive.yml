@@ -1,0 +1,24 @@
+name: Render Keep-Alive Ping
+
+on:
+  schedule:
+    # 14분마다 실행하여 Render 무료 인스턴스의 15분 슬립(Idle)을 방지
+    - cron: '*/14 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    name: Ping Render Web Service
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Service
+        env:
+          RENDER_SERVICE_URL: ${{ secrets.RENDER_SERVICE_URL }}
+        run: |
+          if [ -z "$RENDER_SERVICE_URL" ]; then
+            echo "RENDER_SERVICE_URL secret이 설정되지 않았습니다. GitHub Secrets에 https://<서비스명>.onrender.com/api/ping 을 등록해주세요."
+            exit 0
+          fi
+          echo "Pinging $RENDER_SERVICE_URL ..."
+          curl -s -f -m 30 "$RENDER_SERVICE_URL" || echo "Ping request sent."
+          echo "Ping completed successfully!"

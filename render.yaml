@@ -5,6 +5,7 @@ services:
     dockerfilePath: ./Dockerfile
     plan: free
     region: singapore
+    healthCheckPath: /api/ping
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
         value: Production

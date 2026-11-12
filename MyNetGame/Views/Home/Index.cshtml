@@ -17,8 +17,12 @@
             <span class="badge bg-info text-dark">1103: 유저정보</span>
             <span class="badge bg-warning text-dark">1104: 레벨업</span>
             <span class="badge bg-danger">1105: 골드추가</span>
+            <span class="badge bg-secondary">GET /api/ping</span>
         </div>
-        <button id="btnCheckDb" class="btn btn-sm btn-outline-primary">DB 연결 확인</button>
+        <div>
+            <button id="btnPing" class="btn btn-sm btn-outline-success me-1">⚡ 서버 핑 (/api/ping)</button>
+            <button id="btnCheckDb" class="btn btn-sm btn-outline-primary">DB 연결 확인</button>
+        </div>
     </div>
     <div id="dbAlert" class="alert d-none"></div>
 
@@ -250,6 +254,29 @@
         box.classList.add('alert', isSuccess ? 'alert-success' : 'alert-danger');
         box.innerHTML = `<strong>${titleText}</strong><pre class="mb-0 mt-1 bg-light p-1 rounded" style="font-size:0.8rem; white-space:pre-wrap;">${JSON.stringify(data, null, 2)}</pre>`;
     }
+
+    // 0. 서버 핑 (/api/ping)
+    document.getElementById('btnPing').addEventListener('click', async () => {
+        const btn = document.getElementById('btnPing');
+        const alertBox = document.getElementById('dbAlert');
+        btn.disabled = true;
+        btn.innerText = '핑 전송 중...';
+
+        try {
+            const res = await fetch('/api/ping?checkDb=true');
+            const data = await res.json();
+            alertBox.classList.remove('d-none', 'alert-success', 'alert-danger');
+            alertBox.classList.add('alert-success');
+            alertBox.innerHTML = `<strong>⚡ Ping 응답 성공 (Pong!):</strong> 업타임 <code>${data.uptime}</code> / 서버시각 <code>${data.serverTimeUtc}</code> / DB 상태: <code>${data.database}</code>`;
+        } catch (err) {
+            alertBox.classList.remove('d-none');
+            alertBox.classList.add('alert-danger');
+            alertBox.innerText = '❌ 핑 실패: ' + err.message;
+        } finally {
+            btn.disabled = false;
+            btn.innerText = '⚡ 서버 핑 (/api/ping)';
+        }
+    });
 
     // 1. DB 연결 확인
     document.getElementById('btnCheckDb').addEventListener('click', async () => {
