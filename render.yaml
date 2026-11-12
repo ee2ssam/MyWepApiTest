@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: myfive
+    name: mynetgame
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free

@@ -1,4 +1,4 @@
-name: Build and Deploy MyFive
+name: Build and Deploy MyNetGame
 
 on:
   push:
@@ -26,18 +26,18 @@ jobs:
         dotnet-version: '10.0.x'
 
     - name: Restore dependencies
-      run: dotnet restore MyFive/MyFive.csproj
+      run: dotnet restore MyNetGame/MyNetGame.csproj
 
     - name: Build project
-      run: dotnet build MyFive/MyFive.csproj --configuration Release --no-restore
+      run: dotnet build MyNetGame/MyNetGame.csproj --configuration Release --no-restore
 
     - name: Publish web app
-      run: dotnet publish MyFive/MyFive.csproj --configuration Release --no-build --output ./publish
+      run: dotnet publish MyNetGame/MyNetGame.csproj --configuration Release --no-build --output ./publish
 
     - name: Upload build artifact
       uses: actions/upload-artifact@v4
       with:
-        name: MyFive-Release
+        name: MyNetGame-Release
         path: ./publish/
         retention-days: 14
 

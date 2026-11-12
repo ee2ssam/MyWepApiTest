@@ -1,4 +1,5 @@
 <Solution>
   <Project Path="HelloWeb/HelloWeb.csproj" />
   <Project Path="MyFive/MyFive.csproj" Id="d47054ed-0848-4ca5-b328-463214189320" />
+  <Project Path="MyNetGame/MyNetGame.csproj" Id="a8152613-dee8-4860-a167-723d4923a3aa" />
 </Solution>
