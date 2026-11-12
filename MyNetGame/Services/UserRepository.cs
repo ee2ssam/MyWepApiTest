@@ -12,7 +12,13 @@ namespace MyNetGame.Services
         Task<bool> InsertAsync(UserTbl user);
         Task<bool> UpdateAsync(UserTbl user);
         Task<bool> DeleteAsync(string userId);
+
+        // 프로토콜 저장 프로시저 호출
         Task<int> LoginAsync(string userId, string password);
+        Task<int> UserAddAsync(string userId, string name, string password);
+        Task<UserInfoResponse> GetUserInfoAsync(string userId);
+        Task<LevelupResponse> LevelUpAsync(string userId);
+        Task<AddGoldResponse> AddGoldAsync(string userId, int gold);
     }
 
     public class UserRepository : IUserRepository
@@ -36,7 +42,7 @@ namespace MyNetGame.Services
         {
             using var db = CreateConnection();
             const string sql = @"
-                SELECT user_id, password, mobile, level, health, gold, m_date 
+                SELECT user_id, name, password, mobile, level, health, gold, m_date 
                 FROM user_tbl 
                 ORDER BY user_id;";
             return await db.QueryAsync<UserTbl>(sql);
@@ -47,7 +53,7 @@ namespace MyNetGame.Services
         {
             using var db = CreateConnection();
             const string sql = @"
-                SELECT user_id, password, mobile, level, health, gold, m_date 
+                SELECT user_id, name, password, mobile, level, health, gold, m_date 
                 FROM user_tbl 
                 WHERE user_id = @userId;";
             return await db.QueryFirstOrDefaultAsync<UserTbl>(sql, new { userId });
@@ -58,8 +64,8 @@ namespace MyNetGame.Services
         {
             using var db = CreateConnection();
             const string sql = @"
-                INSERT INTO user_tbl (user_id, password, mobile, level, health, gold, m_date) 
-                VALUES (@user_id, @password, @mobile, @level, @health, @gold, COALESCE(@m_date, CURRENT_DATE));";
+                INSERT INTO user_tbl (user_id, name, password, mobile, level, health, gold, m_date) 
+                VALUES (@user_id, @name, @password, @mobile, @level, @health, @gold, COALESCE(@m_date, CURRENT_DATE));";
             var affected = await db.ExecuteAsync(sql, user);
             return affected > 0;
         }
@@ -70,7 +76,8 @@ namespace MyNetGame.Services
             using var db = CreateConnection();
             const string sql = @"
                 UPDATE user_tbl 
-                SET password = COALESCE(@password, password),
+                SET name = COALESCE(@name, name),
+                    password = COALESCE(@password, password),
                     mobile = COALESCE(@mobile, mobile),
                     level = COALESCE(@level, level),
                     health = COALESCE(@health, health),
@@ -90,13 +97,103 @@ namespace MyNetGame.Services
             return affected > 0;
         }
 
-        // 6. LOGIN 저장 프로시저 (sp_login) 호출
+        // 6. LOGIN 프로시저 (sp_login, Protocol 1101)
         public async Task<int> LoginAsync(string userId, string password)
         {
             using var db = CreateConnection();
-            // Supabase에 생성된 sp_login 저장 함수 호출
             const string sql = "SELECT sp_login(@userId, @password);";
             return await db.ExecuteScalarAsync<int>(sql, new { userId, password });
+        }
+
+        // 7. 유저 등록 프로시저 (sp_user_add, Protocol 1102)
+        public async Task<int> UserAddAsync(string userId, string name, string password)
+        {
+            using var db = CreateConnection();
+            const string sql = "SELECT sp_user_add(@userId, @name, @password);";
+            return await db.ExecuteScalarAsync<int>(sql, new { userId, name, password });
+        }
+
+        // 8. 플레이 유저 정보 프로시저 (sp_user_info, Protocol 1103)
+        public async Task<UserInfoResponse> GetUserInfoAsync(string userId)
+        {
+            using var db = CreateConnection();
+            const string sql = "SELECT result, user_id AS UserId, name, level, health, gold FROM sp_user_info(@userId);";
+            var row = await db.QueryFirstOrDefaultAsync<dynamic>(sql, new { userId });
+
+            if (row == null)
+            {
+                return new UserInfoResponse
+                {
+                    Protocol = -1103,
+                    Result = 1,
+                    UserId = userId
+                };
+            }
+
+            return new UserInfoResponse
+            {
+                Protocol = -1103,
+                Result = (int)row.result,
+                UserId = (string)row.userid,
+                Name = (string)row.name,
+                Level = (int)row.level,
+                Health = (int)row.health,
+                Gold = (int)row.gold
+            };
+        }
+
+        // 9. 레벨업 프로시저 (sp_level_up, Protocol 1104)
+        public async Task<LevelupResponse> LevelUpAsync(string userId)
+        {
+            using var db = CreateConnection();
+            const string sql = "SELECT result, user_id AS UserId, level FROM sp_level_up(@userId);";
+            var row = await db.QueryFirstOrDefaultAsync<dynamic>(sql, new { userId });
+
+            if (row == null)
+            {
+                return new LevelupResponse
+                {
+                    Protocol = -1104,
+                    Result = 1,
+                    UserId = userId,
+                    Level = 0
+                };
+            }
+
+            return new LevelupResponse
+            {
+                Protocol = -1104,
+                Result = (int)row.result,
+                UserId = (string)row.userid,
+                Level = (int)row.level
+            };
+        }
+
+        // 10. 골드 추가 프로시저 (sp_add_gold, Protocol 1105)
+        public async Task<AddGoldResponse> AddGoldAsync(string userId, int gold)
+        {
+            using var db = CreateConnection();
+            const string sql = "SELECT result, user_id AS UserId, gold FROM sp_add_gold(@userId, @gold);";
+            var row = await db.QueryFirstOrDefaultAsync<dynamic>(sql, new { userId, gold });
+
+            if (row == null)
+            {
+                return new AddGoldResponse
+                {
+                    Protocol = -1105,
+                    Result = 1,
+                    UserId = userId,
+                    Gold = 0
+                };
+            }
+
+            return new AddGoldResponse
+            {
+                Protocol = -1105,
+                Result = (int)row.result,
+                UserId = (string)row.userid,
+                Gold = (int)row.gold
+            };
         }
     }
 }
