@@ -5,8 +5,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 
-// Register Supabase Database Service
+// Register Supabase Database Services
 builder.Services.AddScoped<ISupabaseDbService, SupabaseDbService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 var app = builder.Build();
 

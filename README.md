@@ -1,61 +1,61 @@
 # MyNetGame Web App (Supabase + Render 배포)
 
-ASP.NET Core (.NET 10) 웹 애플리케이션으로, **Supabase (PostgreSQL)** 데이터베이스를 조회·연동하고 **GitHub를 통해 Render (render.com)**에 자동 배포됩니다.
+ASP.NET Core (.NET 10) 웹 애플리케이션으로, **Supabase (PostgreSQL)**의 `user_tbl`을 조회·조작하는 **CRUD Web API**가 구현되어 있으며 **GitHub를 통해 Render (render.com)**에 자동 배포됩니다.
 
 ---
 
-## ⚡ 1. Supabase 데이터베이스 연결 설정
+## ⚡ 1. Supabase 데이터베이스 연결 정보
 
-`Npgsql` 및 `Dapper`를 통해 Supabase (PostgreSQL)에 안전하게 연결하여 데이터를 조회합니다.
+- **Host**: `aws-0-ap-southeast-1.pooler.supabase.com`
+- **Port**: `5432`
+- **Database**: `postgres`
+- **User**: `postgres.xqshsxxcennnqbxxxgjt`
+- **Target Table**: `user_tbl`
 
-### 연결 문자열 확인 방법 (Supabase 대시보드)
-1. [Supabase](https://supabase.com) 프로젝트 대시보드 접속
-2. 좌측 메뉴 **Project Settings** (톱니바퀴) > **Database** 이동
-3. **Connection string** 섹션에서 정보 확인:
-   ```text
-   Host=aws-0-ap-northeast-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.<프로젝트ID>;Password=<비밀번호>;SSL Mode=Require;Trust Server Certificate=true;
-   ```
-4. 로컬 실행 시 [`MyNetGame/appsettings.json`](MyNetGame/appsettings.json)의 `DefaultConnection`에 등록되어 있습니다.
+### `user_tbl` 스키마 구조
+- `user_id` (text, Primary Key)
+- `password` (text)
+- `mobile` (varchar(11))
+- `level` (smallint)
+- `health` (integer)
+- `gold` (integer)
+- `m_date` (date, 기본값: 현재 날짜)
 
 ---
 
-## 🚀 2. Render (render.com) 배포 방법
+## 📡 2. `user_tbl` CRUD Web API 엔드포인트
 
-저장소 루트의 [`Dockerfile`](Dockerfile) 및 [`render.yaml`](render.yaml)을 통해 Render에서 무료로 호스팅됩니다.
+| HTTP Method | 엔드포인트 URL | 설명 | 요청 본문 (JSON) 예시 |
+| :--- | :--- | :--- | :--- |
+| **GET** | `/api/user` | 전체 사용자 목록 조회 (SELECT) | 없음 |
+| **GET** | `/api/user/{user_id}` | 특정 사용자 단건 조회 (SELECT) | 없음 |
+| **POST** | `/api/user` | 신규 사용자 등록 (INSERT) | `{"user_id":"player1","password":"123","mobile":"01012345678","level":1,"health":100,"gold":500}` |
+| **PUT** | `/api/user/{user_id}` | 사용자 정보 수정 (UPDATE) | `{"password":"new_pass","mobile":"01087654321","level":5,"health":150,"gold":1000}` |
+| **DELETE** | `/api/user/{user_id}` | 사용자 삭제 (DELETE) | 없음 |
 
-### 단계별 배포 순서
-1. **[render.com](https://render.com)에 로그인** (GitHub 계정 연동)
-2. 대시보드 우측 상단 **+ New** ➡️ **Web Service** 선택
-3. GitHub 저장소(`MyWepApiTest`)를 선택합니다:
-   - **Name**: `mynetgame`
+---
+
+## 🚀 3. Render (render.com) 배포 설정
+
+이 프로젝트는 Dockerfile을 기반으로 Render에서 무료로 호스팅됩니다:
+
+1. [Render](https://render.com) 대시보드 ➡️ **+ New ➡️ Web Service** 선택
+2. GitHub 저장소(`MyWepApiTest`) 선택:
    - **Environment**: `Docker`
    - **Dockerfile Path**: `./Dockerfile`
    - **Plan**: `Free`
-   - **Region**: `Singapore` (권장)
-4. **Environment Variables (환경 변수) 설정**:
-   - `ConnectionStrings__DefaultConnection` : 본인의 Supabase 연결 문자열
-   - `PORT` : `8080`
-5. **Create Web Service** 클릭!
-   - Render가 Dockerfile을 통해 자동으로 컨테이너를 빌드하고 무료 도메인(`https://<서비스명>.onrender.com`)으로 배포합니다.
-   - 웹 접속 시 메인 페이지에서 Supabase 연결 상태 및 테이블 조회를 실시간으로 확인할 수 있습니다.
+   - **Region**: `Singapore`
+3. **Environment Variables**:
+   - `ConnectionStrings__DefaultConnection`:
+     `Host=aws-0-ap-southeast-1.pooler.supabase.com;Port=5432;Database=postgres;Username=postgres.xqshsxxcennnqbxxxgjt;Password=MbcAcademy0420;SSL Mode=Require;Trust Server Certificate=true;`
+   - `PORT`: `8080`
+4. **Create Web Service** 클릭 시 자동 배포 완료
 
 ---
 
-## 🔄 3. GitHub Actions CI/CD 파이프라인 ([.github/workflows/deploy.yml](.github/workflows/deploy.yml))
-
-`main` 브랜치에 코드를 푸시하면 다음 단계가 자동으로 실행됩니다:
-1. **.NET 10 빌드 및 Publish**: `MyNetGame` 컴파일 검증 및 배포 산출물 아티팩트(`MyNetGame-Release`) 생성
-2. **Docker 이미지 빌드 & GHCR 푸시**: GitHub Container Registry에 이미지 배포
-3. **Render 배포 트리거 (`deploy-render`)**: Render Deploy Hook을 통해 자동 배포 요청
-
----
-
-## 💻 로컬 개발 및 실행
+## 💻 4. 로컬 실행 및 테스트
 
 ```bash
-# 의존성 복원 및 빌드
-dotnet build MyNetGame/MyNetGame.csproj
-
-# 로컬 실행
 dotnet run --project MyNetGame/MyNetGame.csproj
 ```
+브라우저에서 `http://localhost:<포트>` 접속 시 웹 대시보드에서 `user_tbl`의 **등록(INSERT), 목록 조회(SELECT), 수정(UPDATE), 삭제(DELETE)**를 마우스 클릭으로 바로 테스트할 수 있습니다.
